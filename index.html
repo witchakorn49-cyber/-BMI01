@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เครื่องคำนวณ BMI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f4ef; --card:#ffffff; --ink:#1d2321; --muted:#66706c; --line:#e3e0d8;
+    --accent:#1f6f5c; --accent-soft:#e3f0ec;
+    --c-under:#4a8fd4; --c-normal:#2f9e6b; --c-over:#e2b53a; --c-ob1:#e5803a; --c-ob2:#d4523c; --c-ob3:#a32f3a;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#141816; --card:#1d2321; --ink:#eef1ef; --muted:#9aa5a0; --line:#2e3532; --accent:#5cc4a6; --accent-soft:#1f3a33; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"IBM Plex Sans Thai",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 48px}
+  header h1{font-size:28px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
+  header p{margin:0 0 24px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px}
+  @media (max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .card h2{font-size:15px;margin:0 0 14px;color:var(--muted);font-weight:600}
+  .seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:16px}
+  .seg button{flex:1;border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;padding:7px 6px;border-radius:7px;cursor:pointer}
+  .seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  label{display:block;font-size:14px;font-weight:500;margin:0 0 6px}
+  .field{margin-bottom:14px}
+  .inrow{display:flex;gap:8px}
+  .inbox{position:relative;flex:1}
+  .inbox input{width:100%;font:inherit;font-size:18px;padding:10px 46px 10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+  .inbox input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .inbox span{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .err{color:var(--c-ob2);font-size:13px;min-height:18px}
+  .btn{width:100%;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;font-size:16px;padding:12px;border-radius:10px;cursor:pointer}
+  @media (prefers-color-scheme: dark){.btn{color:#0f1a16}}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);margin-top:8px;font-weight:500}
+
+  .result-top{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap}
+  .bmi-num{font-size:64px;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .bmi-unit{font-size:13px;color:var(--muted)}
+  .badge{display:inline-block;padding:6px 12px;border-radius:999px;font-weight:600;font-size:15px;color:#fff}
+  .empty{color:var(--muted);padding:30px 0;text-align:center}
+  .gauge{margin:26px 0 8px;position:relative}
+  .bar{display:flex;height:14px;border-radius:999px;overflow:hidden}
+  .bar div{height:100%}
+  .ticks{position:relative;height:18px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .ticks span{position:absolute;transform:translateX(-50%);top:4px}
+  .pin{position:absolute;top:-10px;width:0;transition:left .45s cubic-bezier(.3,.8,.3,1)}
+  .pin::before{content:"";position:absolute;left:-9px;top:0;border:9px solid transparent;border-top-color:var(--ink);border-bottom:0}
+  .pin::after{content:"";position:absolute;left:-1.5px;top:8px;width:3px;height:18px;background:var(--ink);border-radius:2px}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:18px}
+  .fact{background:var(--bg);border-radius:12px;padding:12px 14px}
+  .fact b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+  .fact small{color:var(--muted);font-size:12.5px}
+  .advice{margin-top:16px;padding:14px 16px;border-radius:12px;background:var(--accent-soft);font-size:14.5px}
+
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+  th{font-size:13px;color:var(--muted);font-weight:600}
+  td.r{font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr.hit td{background:var(--accent-soft);font-weight:600}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
+  .full{grid-column:1/-1}
+  .note{font-size:13px;color:var(--muted);margin-top:14px}
+  .note p{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>เครื่องคำนวณดัชนีมวลกาย (BMI)</h1>
+    <p>กรอกส่วนสูงและน้ำหนัก แล้วดูผลตามเกณฑ์องค์การอนามัยโลก (WHO) สำหรับผู้ใหญ่อายุ 18 ปีขึ้นไป</p>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2>ข้อมูลของคุณ</h2>
+      <div class="seg" id="unitSeg">
+        <button class="on" data-u="metric">ซม. / กก.</button>
+        <button data-u="imperial">ฟุต-นิ้ว / ปอนด์</button>
+      </div>
+
+      <form id="f" novalidate>
+        <div class="field" id="hMetric">
+          <label for="hcm">ส่วนสูง</label>
+          <div class="inbox"><input id="hcm" type="number" inputmode="decimal" placeholder="เช่น 165" min="50" max="250" step="0.1"><span>ซม.</span></div>
+        </div>
+        <div class="field" id="hImp" hidden>
+          <label for="hft">ส่วนสูง</label>
+          <div class="inrow">
+            <div class="inbox"><input id="hft" type="number" inputmode="numeric" placeholder="5" min="1" max="8"><span>ฟุต</span></div>
+            <div class="inbox"><input id="hin" type="number" inputmode="decimal" placeholder="5" min="0" max="11.9" step="0.1"><span>นิ้ว</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="w">น้ำหนัก</label>
+          <div class="inbox"><input id="w" type="number" inputmode="decimal" placeholder="เช่น 60" min="10" max="400" step="0.1"><span id="wUnit">กก.</span></div>
+        </div>
+
+        <label style="margin-top:4px">เกณฑ์ที่ใช้แปลผล</label>
+        <div class="seg" id="stdSeg">
+          <button type="button" class="on" data-s="asia">WHO เอเชีย (ใช้ในไทย)</button>
+          <button type="button" data-s="intl">WHO สากล</button>
+        </div>
+
+        <div class="err" id="err"></div>
+        <button class="btn" type="submit">คำนวณ BMI</button>
+        <button class="btn ghost" type="button" id="reset">ล้างข้อมูล</button>
+      </form>
+    </section>
+
+    <section class="card" id="resultCard" aria-live="polite">
+      <h2>ผลลัพธ์</h2>
+      <div id="result"><div class="empty">กรอกส่วนสูงและน้ำหนักเพื่อดูผล</div></div>
+    </section>
+
+    <section class="card full">
+      <h2 id="tblTitle">ตารางเกณฑ์ BMI</h2>
+      <table>
+        <thead><tr><th>ระดับ</th><th>ช่วง BMI (กก./ม²)</th><th>ความเสี่ยงต่อโรคร่วม*</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="note">
+        <p><b>สูตร:</b> BMI = น้ำหนัก (กก.) ÷ ส่วนสูง (ม.)²</p>
+        <p><b>เกณฑ์ WHO เอเชีย</b> (WHO Western Pacific Region, 2000) ตั้งจุดตัดต่ำกว่าเกณฑ์สากล เพราะคนเอเชียมีความเสี่ยงโรคเบาหวานและหัวใจที่ BMI ต่ำกว่า กรมอนามัยและหน่วยงานสาธารณสุขของไทยใช้เกณฑ์นี้</p>
+        <p>* ความเสี่ยงต่อโรคร่วม เช่น เบาหวานชนิดที่ 2 ความดันโลหิตสูง โรคหัวใจและหลอดเลือด</p>
+        <p>BMI เป็นค่าคัดกรองเบื้องต้น ไม่ได้แยกกล้ามเนื้อกับไขมัน จึงอาจคลาดเคลื่อนในนักกีฬา ผู้สูงอายุ และหญิงตั้งครรภ์ ส่วนเด็กและวัยรุ่นต่ำกว่า 18 ปี ต้องใช้กราฟการเจริญเติบโตตามเพศและอายุแทน ควรดูรอบเอวร่วมด้วย (ไม่ควรเกินส่วนสูง ÷ 2) และปรึกษาแพทย์หรือนักโภชนาการหากมีข้อกังวล</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const STD = {
+  asia: {
+    name: "WHO เอเชีย (ใช้ในไทย)",
+    normal: [18.5, 23],
+    cats: [
+      {lo:-Infinity, hi:18.5, th:"น้ำหนักน้อย / ผอม", risk:"ต่ำ (แต่เสี่ยงขาดสารอาหาร)", c:"--c-under", adv:"น้ำหนักต่ำกว่าเกณฑ์ ควรเพิ่มพลังงานจากอาหารที่มีประโยชน์ เน้นโปรตีน และออกกำลังกายแบบเสริมกล้ามเนื้อ หากน้ำหนักลดลงโดยไม่ทราบสาเหตุควรพบแพทย์"},
+      {lo:18.5, hi:23, th:"ปกติ / สมส่วน", risk:"เท่าคนทั่วไป", c:"--c-normal", adv:"น้ำหนักอยู่ในเกณฑ์ที่ดี รักษาไว้ด้วยการกินอาหารให้ครบหมู่และออกกำลังกายสม่ำเสมอ อย่างน้อย 150 นาทีต่อสัปดาห์"},
+      {lo:23, hi:25, th:"น้ำหนักเกิน / ท้วม", risk:"เพิ่มขึ้น", c:"--c-over", adv:"เริ่มเกินเกณฑ์ ลองลดของหวาน ของทอด และเครื่องดื่มที่มีน้ำตาล เพิ่มผักและการเคลื่อนไหวในแต่ละวัน"},
+      {lo:25, hi:30, th:"อ้วนระดับ 1", risk:"ปานกลาง", c:"--c-ob1", adv:"เสี่ยงต่อเบาหวานและความดันโลหิตสูงมากขึ้น ควรควบคุมอาหารและออกกำลังกายอย่างจริงจัง และตรวจสุขภาพประจำปี"},
+      {lo:30, hi:Infinity, th:"อ้วนระดับ 2", risk:"สูง", c:"--c-ob2", adv:"ความเสี่ยงต่อโรคร่วมสูง ควรปรึกษาแพทย์หรือนักโภชนาการเพื่อวางแผนลดน้ำหนักอย่างปลอดภัย"}
+    ]
+  },
+  intl: {
+    name: "WHO สากล",
+    normal: [18.5, 25],
+    cats: [
+      {lo:-Infinity, hi:18.5, th:"น้ำหนักน้อย (Underweight)", risk:"ต่ำ (แต่เสี่ยงขาดสารอาหาร)", c:"--c-under", adv:"น้ำหนักต่ำกว่าเกณฑ์ ควรเพิ่มพลังงานจากอาหารที่มีประโยชน์ เน้นโปรตีน และออกกำลังกายแบบเสริมกล้ามเนื้อ หากน้ำหนักลดลงโดยไม่ทราบสาเหตุควรพบแพทย์"},
+      {lo:18.5, hi:25, th:"ปกติ (Normal)", risk:"เท่าคนทั่วไป", c:"--c-normal", adv:"น้ำหนักอยู่ในเกณฑ์ที่ดีตามเกณฑ์สากล หากเป็นคนเอเชียและ BMI ตั้งแต่ 23 ขึ้นไป ควรดูเกณฑ์เอเชียประกอบด้วย"},
+      {lo:25, hi:30, th:"น้ำหนักเกิน (Pre-obese)", risk:"เพิ่มขึ้น", c:"--c-over", adv:"เกินเกณฑ์ ลองลดของหวาน ของทอด และเครื่องดื่มที่มีน้ำตาล เพิ่มผักและการเคลื่อนไหวในแต่ละวัน"},
+      {lo:30, hi:35, th:"อ้วนระดับ 1 (Obese class I)", risk:"ปานกลาง", c:"--c-ob1", adv:"เสี่ยงต่อเบาหวานและความดันโลหิตสูงมากขึ้น ควรควบคุมอาหาร ออกกำลังกาย และตรวจสุขภาพประจำปี"},
+      {lo:35, hi:40, th:"อ้วนระดับ 2 (Obese class II)", risk:"สูง", c:"--c-ob2", adv:"ความเสี่ยงต่อโรคร่วมสูง ควรปรึกษาแพทย์หรือนักโภชนาการเพื่อวางแผนลดน้ำหนัก"},
+      {lo:40, hi:Infinity, th:"อ้วนระดับ 3 (Obese class III)", risk:"สูงมาก", c:"--c-ob3", adv:"ความเสี่ยงสูงมาก ควรพบแพทย์เพื่อประเมินและรับการดูแลอย่างใกล้ชิด"}
+    ]
+  }
+};
+const G_MIN = 14, G_MAX = 42;
+
+let unit = "metric", std = "asia", last = null;
+const $ = id => document.getElementById(id);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (n, d=1) => n.toLocaleString("th-TH", {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtRange = c => c.lo === -Infinity ? `น้อยกว่า ${fmt(c.lo===-Infinity?c.hi:c.lo)}` :
+                      c.hi === Infinity ? `${fmt(c.lo)} ขึ้นไป` : `${fmt(c.lo)} – ${fmt(c.hi - 0.1)}`;
+
+function catOf(b){ const s = STD[std]; return s.cats.find(c => b >= c.lo && b < c.hi); }
+
+function renderTable(){
+  const s = STD[std];
+  $("tblTitle").textContent = "ตารางเกณฑ์ BMI — " + s.name;
+  const hit = last ? catOf(last.bmi) : null;
+  $("tbody").innerHTML = s.cats.map(c => `
+    <tr class="${c===hit?'hit':''}">
+      <td><span class="dot" style="background:var(${c.c})"></span>${c.th}</td>
+      <td class="r">${fmtRange(c)}</td>
+      <td>${c.risk}</td>
+    </tr>`).join("");
+}
+
+function pos(b){ return Math.max(0, Math.min(100, (b - G_MIN) / (G_MAX - G_MIN) * 100)); }
+
+function renderResult(){
+  if(!last){ $("result").innerHTML = '<div class="empty">กรอกส่วนสูงและน้ำหนักเพื่อดูผล</div>'; return; }
+  const s = STD[std], {bmi, hm, kg} = last, c = catOf(bmi);
+  const lo = s.normal[0]*hm*hm, hi = (s.normal[1]-0.1)*hm*hm;
+  const toKg = unit === "imperial" ? 1/0.45359237 : 1, wu = unit === "imperial" ? "ปอนด์" : "กก.";
+  let diff;
+  if(kg < lo) diff = `ควรเพิ่มอีกราว <b>${fmt((lo-kg)*toKg)} ${wu}</b><small>เพื่อเข้าสู่เกณฑ์ปกติ</small>`;
+  else if(kg > hi) diff = `ควรลดอีกราว <b>${fmt((kg-hi)*toKg)} ${wu}</b><small>เพื่อเข้าสู่เกณฑ์ปกติ</small>`;
+  else diff = `<b>อยู่ในเกณฑ์แล้ว</b><small>ไม่ต้องเพิ่มหรือลดน้ำหนัก</small>`;
+
+  const segs = s.cats.map(k => {
+    const a = Math.max(G_MIN, k.lo), b = Math.min(G_MAX, k.hi);
+    return `<div style="width:${(b-a)/(G_MAX-G_MIN)*100}%;background:var(${k.c})"></div>`;
+  }).join("");
+  const ticks = s.cats.slice(1).map(k => `<span style="left:${pos(k.lo)}%">${k.lo}</span>`).join("");
+
+  $("result").innerHTML = `
+    <div class="result-top">
+      <div><div class="bmi-num">${fmt(bmi)}</div><div class="bmi-unit">กก./ม²</div></div>
+      <div style="padding-bottom:10px"><span class="badge" style="background:var(${c.c})">${c.th}</span>
+      <div class="bmi-unit" style="margin-top:6px">ตามเกณฑ์ ${s.name}</div></div>
+    </div>
+    <div class="gauge">
+      <div class="pin" style="left:${pos(bmi)}%"></div>
+      <div class="bar">${segs}</div>
+      <div class="ticks">${ticks}</div>
+    </div>
+    <div class="facts">
+      <div class="fact"><small>น้ำหนักที่เหมาะกับส่วนสูงนี้</small><b>${fmt(lo*toKg)} – ${fmt(hi*toKg)} ${wu}</b></div>
+      <div class="fact"><small>เทียบกับน้ำหนักปัจจุบัน</small>${diff.replace('<small>','<br><small>')}</div>
+      <div class="fact"><small>ความเสี่ยงต่อโรคร่วม</small><b>${c.risk}</b></div>
+    </div>
+    <div class="advice">${c.adv}</div>`;
+}
+
+function calc(e){
+  if(e) e.preventDefault();
+  let hm, kg;
+  const w = parseFloat($("w").value);
+  if(unit === "metric"){
+    hm = parseFloat($("hcm").value) / 100; kg = w;
+  } else {
+    const ft = parseFloat($("hft").value) || 0, inch = parseFloat($("hin").value) || 0;
+    hm = (ft*12 + inch) * 0.0254; kg = w * 0.45359237;
+  }
+  if(!hm || !kg || isNaN(hm) || isNaN(kg)){ $("err").textContent = "กรุณากรอกส่วนสูงและน้ำหนักให้ครบ"; return; }
+  if(hm < 0.5 || hm > 2.5){ $("err").textContent = "ส่วนสูงควรอยู่ระหว่าง 50–250 ซม."; return; }
+  if(kg < 10 || kg > 400){ $("err").textContent = "น้ำหนักควรอยู่ระหว่าง 10–400 กก."; return; }
+  $("err").textContent = "";
+  last = {bmi: kg/(hm*hm), hm, kg};
+  renderResult(); renderTable();
+}
+
+$("f").addEventListener("submit", calc);
+$("reset").addEventListener("click", () => {
+  ["hcm","hft","hin","w"].forEach(i => $(i).value = "");
+  last = null; $("err").textContent = ""; renderResult(); renderTable();
+});
+
+$("unitSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b || b.dataset.u === unit) return;
+  // convert current values
+  if(b.dataset.u === "imperial"){
+    const cm = parseFloat($("hcm").value), kg = parseFloat($("w").value);
+    if(cm){ const tin = cm/2.54; $("hft").value = Math.floor(tin/12); $("hin").value = (tin%12).toFixed(1); }
+    if(kg) $("w").value = (kg/0.45359237).toFixed(1);
+  } else {
+    const tin = (parseFloat($("hft").value)||0)*12 + (parseFloat($("hin").value)||0), lb = parseFloat($("w").value);
+    if(tin) $("hcm").value = (tin*2.54).toFixed(1);
+    if(lb) $("w").value = (lb*0.45359237).toFixed(1);
+  }
+  unit = b.dataset.u;
+  [...$("unitSeg").children].forEach(x => x.classList.toggle("on", x === b));
+  $("hMetric").hidden = unit !== "metric"; $("hImp").hidden = unit === "metric";
+  $("wUnit").textContent = unit === "metric" ? "กก." : "ปอนด์";
+  if(last) renderResult();
+});
+
+$("stdSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  std = b.dataset.s;
+  [...$("stdSeg").children].forEach(x => x.classList.toggle("on", x === b));
+  renderResult(); renderTable();
+});
+
+renderTable();
+</script>
+</body>
+</html>
